@@ -40,7 +40,7 @@ extern "C" {
 using namespace clickhouse;
 using namespace std;
 
-zend_class_entry *SeasClick_ce;
+zend_class_entry *SeasClick_ce, *SeasClickException_ce;
 map<int, Client*> clientMap;
 map<int, Block> clientInsertBlack;
 
@@ -63,6 +63,9 @@ static PHP_METHOD(SEASCLICK_RES_NAME, writeStart);
 static PHP_METHOD(SEASCLICK_RES_NAME, write);
 static PHP_METHOD(SEASCLICK_RES_NAME, writeEnd);
 static PHP_METHOD(SEASCLICK_RES_NAME, execute);
+
+ZEND_BEGIN_ARG_INFO_EX(SeasCilck_void, 0, 0, 0)
+ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(SeasCilck_construct, 0, 0, 1)
 ZEND_ARG_INFO(0, connectParames)
@@ -99,7 +102,7 @@ ZEND_END_ARG_INFO()
 /* {{{ SeasClick_functions[] */
 const zend_function_entry SeasClick_functions[] =
 {
-    PHP_FE(SeasClick_version,	NULL)
+    PHP_FE(SeasClick_version, SeasCilck_void)
     PHP_FE_END
 };
 /* }}} */
@@ -107,7 +110,7 @@ const zend_function_entry SeasClick_functions[] =
 const zend_function_entry SeasClick_methods[] =
 {
     PHP_ME(SEASCLICK_RES_NAME, __construct,   SeasCilck_construct, ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
-    PHP_ME(SEASCLICK_RES_NAME, __destruct,    NULL, ZEND_ACC_PUBLIC | ZEND_ACC_DTOR)
+    PHP_ME(SEASCLICK_RES_NAME, __destruct,    SeasCilck_void, ZEND_ACC_PUBLIC | ZEND_ACC_DTOR)
     PHP_ME(SEASCLICK_RES_NAME, select,        SeasCilck_select, ZEND_ACC_PUBLIC)
     PHP_ME(SEASCLICK_RES_NAME, insert,        SeasCilck_insert, ZEND_ACC_PUBLIC)
     PHP_ME(SEASCLICK_RES_NAME, writeStart,    SeasCilck_writeStart, ZEND_ACC_PUBLIC)
@@ -121,12 +124,15 @@ const zend_function_entry SeasClick_methods[] =
  */
 PHP_MINIT_FUNCTION(SeasClick)
 {
-    zend_class_entry SeasClick;
+    zend_class_entry SeasClick, SeasClickException;
     INIT_CLASS_ENTRY(SeasClick, SEASCLICK_RES_NAME, SeasClick_methods);
+    INIT_CLASS_ENTRY(SeasClickException, "SeasClickException", NULL);
 #if PHP_VERSION_ID >= 70000
     SeasClick_ce = zend_register_internal_class_ex(&SeasClick, NULL);
+    SeasClickException_ce = zend_register_internal_class_ex(&SeasClickException, zend_ce_exception);
 #else
     SeasClick_ce = zend_register_internal_class_ex(&SeasClick, NULL, NULL TSRMLS_CC);
+    SeasClickException_ce = zend_register_internal_class_ex(&SeasClickException, zend_exception_get_default(TSRMLS_C), NULL TSRMLS_CC);
 #endif
     zend_declare_property_stringl(SeasClick_ce, "host", strlen("host"), "127.0.0.1", sizeof("127.0.0.1") - 1, ZEND_ACC_PROTECTED TSRMLS_CC);
     zend_declare_property_long(SeasClick_ce, "port", strlen("port"), 9000, ZEND_ACC_PROTECTED TSRMLS_CC);
@@ -756,7 +762,7 @@ PHP_METHOD(SEASCLICK_RES_NAME, execute)
 }
 /* }}} */
 
-/* {{{ proto array __destruct()
+/* {{{ proto void __destruct()
  */
 PHP_METHOD(SEASCLICK_RES_NAME, __destruct)
 {
